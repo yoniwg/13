@@ -27,3 +27,9 @@ def list_tree_from_sequence(sequence):
     tokens = tokenize(sequence)
     list_tree = reader(tokens)
     return list_tree
+
+
+def sequence_from_tree(node):
+    if node.children:
+        return '(' + node.tag + ' ' + ' '.join(map(sequence_from_tree, node.children)) + ')'
+    return node.tag

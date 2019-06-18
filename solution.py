@@ -8,12 +8,12 @@ See the spec that this class inherits, for the spec details
 '''
 from collections import defaultdict
 
+from RandomTree import randomize_tree
 from spec import Spec
 from time import sleep
 
-from transformations import get_terminal_or_non_t, CNF_transformer, to_non_t
-from util.tree.builders import node_tree_from_sequence
-
+from transformations import get_terminal_or_non_t, CNF_transformer, to_non_t, remove_non_t_pref
+from util.tree.builders import node_tree_from_sequence, sequence_from_tree
 
 
 class Submission(Spec):
@@ -21,6 +21,7 @@ class Submission(Spec):
     def __init__(self):
         super().__init__()
         self.raw_rules_dict = defaultdict(lambda: defaultdict(float))
+        self._transformed_dic = dict()
 
     @staticmethod
     def _count_occurrences(node, occurrences_dict):
@@ -43,7 +44,10 @@ class Submission(Spec):
             for prod_occur in productions.items():
                 prod, prod_count = prod_occur
                 self.raw_rules_dict[non_t][prod] = prod_count / non_t_count
-        self._transformed_dic = CNF_transformer(self.raw_rules_dict).transform()
+        self._transformed_dic = CNF_transformer().transform(self.raw_rules_dict)
+        tree = randomize_tree(self._transformed_dic, to_non_t("TOP"))
+        remove_non_t_pref(tree)
+        print(sequence_from_tree(tree))
         print("Training finished")
 
 
