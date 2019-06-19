@@ -12,7 +12,7 @@ from RandomTree import randomize_tree
 from spec import Spec
 from time import sleep
 
-from transformations import get_terminal_or_non_t, CNF_transformer, to_non_t, remove_non_t_pref
+from transformations import get_terminal_or_non_t, CNF_transformer, to_non_t, remove_non_t_pref, reverse_dict
 from util.tree.builders import node_tree_from_sequence, sequence_from_tree
 
 
@@ -22,14 +22,10 @@ class Submission(Spec):
         super().__init__()
         self.raw_rules_dict = defaultdict(lambda: defaultdict(float))
         self._transformed_dic = dict()
+        self._reversed_dict = dict()
 
-    @staticmethod
-    def _count_occurrences(node, occurrences_dict):
-        if not node.children:
-            return
-        occurrences_dict[to_non_t(node.tag)][' '.join(map(get_terminal_or_non_t, node.children))] += 1
-        for child in node.children:
-            Submission._count_occurrences(child, occurrences_dict)
+    def _count_occurrences(self, node, occurrences_dict):
+        """ Abstract """
 
     def train(self, training_treebank_file='data/heb-ctrees.train'):
         ''' mock training function, learns nothing '''
@@ -45,9 +41,7 @@ class Submission(Spec):
                 prod, prod_count = prod_occur
                 self.raw_rules_dict[non_t][prod] = prod_count / non_t_count
         self._transformed_dic = CNF_transformer().transform(self.raw_rules_dict)
-        tree = randomize_tree(self._transformed_dic, to_non_t("TOP"))
-        remove_non_t_pref(tree)
-        print(sequence_from_tree(tree))
+        self._reversed_dict = reverse_dict(self._transformed_dic)
         print("Training finished")
 
 
