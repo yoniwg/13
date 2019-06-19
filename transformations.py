@@ -37,7 +37,7 @@ def reverse_dict(rules_dict):
 
 
 class CNF_transformer:
-    def __init__(self, omit_unaries=False):
+    def __init__(self, omit_unaries=True):
         super().__init__()
         self.cnf_rules_dict = dict()
         self.omit_unaries = omit_unaries
@@ -56,7 +56,7 @@ class CNF_transformer:
                     if prob == 0:  # zero probability means it was removed
                         continue
                     if self._is_unary(prod):
-                        self._binarize(prod, non_t, non_t, prob)
+                        self._percolate(prod, non_t, non_t, prob)
 
         for rule in list(self.cnf_rules_dict.items()):
             non_t, prods = rule
@@ -66,7 +66,7 @@ class CNF_transformer:
                     continue
                 tags_count = prod.count(' ') + 1
                 if tags_count > 2:
-                    self._percolate(prod, non_t)
+                    self._binarize(prod, non_t)
         assert self._transformed(), "Found non-binary rules"
 
         clean_dict = defaultdict(lambda: defaultdict(float))
@@ -79,7 +79,7 @@ class CNF_transformer:
                 clean_dict[non_t][prod] = prod_prob
         return clean_dict
 
-    def _binarize(self, prod, non_t_accum, prev_prod, prob):
+    def _percolate(self, prod, non_t_accum, prev_prod, prob):
         self.cnf_rules_dict[prev_prod][prod] = 0
         non_t_accum += '+' + prod
         if prev_prod == prod:
@@ -89,11 +89,11 @@ class CNF_transformer:
             if prod_prob == 0:
                 continue
             if self._is_unary(prod_prod):
-                self._binarize(prod_prod, non_t_accum, prod, prod_prob * prob)
+                self._percolate(prod_prod, non_t_accum, prod, prod_prob * prob)
             else:
                 self.cnf_rules_dict[non_t_accum][prod_prod] += prod_prob * prob
 
-    def _percolate(self, prod, non_t):
+    def _binarize(self, prod, non_t):
         split_prod = prod.split(' ')
         prob = self.cnf_rules_dict[non_t][prod]
         self.cnf_rules_dict[non_t][prod] = 0
@@ -102,7 +102,7 @@ class CNF_transformer:
             remain = '-'.join(split_prod[:i + 1]) + '*' + '-'.join(split_prod[i + 1:])
             self.cnf_rules_dict[non_t][first + ' ' + remain] = prob
             non_t = remain
-            prod = 1
+            prob = 1
         self.cnf_rules_dict[non_t][' '.join(split_prod[-2:])] = 1
 
     def _transformed(self):
@@ -119,12 +119,12 @@ class CNF_transformer:
         for child_idx in range(len(root_node.children)):
             child = root_node.children[child_idx]
             if child.count('+'):
-                self._debinarize(child)
+                self._depercolate(child)
             if child.count('*'):
-                self._depercolate(root_node, child_idx)
+                self._debinarize(root_node, child_idx)
 
     @staticmethod
-    def _debinarize(node):
+    def _depercolate(node):
         plus_idx = node.tag.index('+')
         new_node = Node(node.tag[plus_idx + 1:])
         new_node.children = node.children
@@ -132,7 +132,7 @@ class CNF_transformer:
         node.tag = node.tag[:plus_idx]
 
     @staticmethod
-    def _depercolate(parent, child_idx):
+    def _debinarize(parent, child_idx):
         node = parent.children.pop(child_idx)
         for gr_child in reversed(node.children):  # reversed since we push it in child_idx
             parent.children.insert(child_idx, gr_child)
