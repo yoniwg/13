@@ -1,8 +1,6 @@
-from collections.__init__ import defaultdict
+from collections import defaultdict
 from copy import deepcopy
-
 from transformation.derivations import is_terminal
-from util.tree.node import Node
 
 
 def assert_sum_to_one(prob_dict):
@@ -20,10 +18,6 @@ class cnf_transformer:
     @staticmethod
     def _is_unary(prod):
         return prod.count(' ') == 0 and not is_terminal(prod)
-
-    @staticmethod
-    def merge_non_terminals(parent, child):
-        return parent + '+' + child
 
     def transform(self, raw_rules_dict):
         self.cnf_rules_dict = deepcopy(raw_rules_dict)
@@ -63,20 +57,6 @@ class cnf_transformer:
         assert_sum_to_one(clean_dict)
         return clean_dict
 
-    # def _percolate(self, prod, non_t_accum, prev_prod, prob):
-    #     self.cnf_rules_dict[prev_prod][prod] = 0
-    #     non_t_accum = self.merge_non_terminals(non_t_accum, prod)
-    #     if prev_prod == prod:
-    #         return
-    #     for prod_prod_prob in self.cnf_rules_dict[prod].items():
-    #         prod_prod, prod_prob = prod_prod_prob
-    #         if prod_prob == 0:
-    #             continue
-    #         if self._is_unary(prod_prod):
-    #             self._percolate(prod_prod, non_t_accum, prod, prod_prob * prob)
-    #         else:
-    #             self.cnf_rules_dict[non_t_accum][prod_prod] += prod_prob * prob
-
     def _percolate(self, rule_l, rule_r, prob, rules_chain=set()):
         if rule_l == rule_r:
             return
@@ -115,18 +95,8 @@ class cnf_transformer:
             return
         for child_idx in range(len(root_node.children)):
             child = root_node.children[child_idx]
-            if child.count('+'):
-                self._depercolate(child)
             if child.count('*'):
                 self._debinarize(root_node, child_idx)
-
-    @staticmethod
-    def _depercolate(node):
-        plus_idx = node.tag.index('+')
-        new_node = Node(node.tag[plus_idx + 1:])
-        new_node.children = node.children
-        node.children = []
-        node.tag = node.tag[:plus_idx]
 
     @staticmethod
     def _debinarize(parent, child_idx):
