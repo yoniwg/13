@@ -8,21 +8,29 @@ See the spec that this class inherits, for the spec details
 '''
 from collections import defaultdict
 
-from RandomTree import randomize_tree
 from spec import Spec
-from time import sleep
+from transformation.cnf_transformer import cnf_transformer
+from util.tree.builders import node_tree_from_sequence
 
-from transformations import get_terminal_or_non_t, CNF_transformer, to_non_t, remove_non_t_pref, reverse_dict
-from util.tree.builders import node_tree_from_sequence, sequence_from_tree
+
+def reverse_dict(rules_dict):
+    reversed_dict = defaultdict(lambda: defaultdict(float))
+    for rule in rules_dict.items():
+        non_t, prods = rule
+        for prod_prob in prods.items():
+            prod, prob = prod_prob
+            reversed_dict[prod][non_t] = prod_prob
+    return reversed_dict
 
 
 class Submission(Spec):
 
-    def __init__(self):
+    def __init__(self, omit_unaries):
         super().__init__()
         self.raw_rules_dict = defaultdict(lambda: defaultdict(float))
         self._transformed_dic = dict()
         self._reversed_dict = dict()
+        self._transformer = cnf_transformer(omit_unaries)
 
     def _count_occurrences(self, node, occurrences_dict):
         """ Abstract """
@@ -40,21 +48,17 @@ class Submission(Spec):
             for prod_occur in productions.items():
                 prod, prod_count = prod_occur
                 self.raw_rules_dict[non_t][prod] = prod_count / non_t_count
-        self._transformed_dic = CNF_transformer().transform(self.raw_rules_dict)
+        self._transformed_dic = self._transformer.transform(self.raw_rules_dict)
         self._reversed_dict = reverse_dict(self._transformed_dic)
         print("Training finished")
 
-
-
-    
     def parse(self, sentence):
         ''' mock parsing function, returns a constant parse unrelated to the input sentence '''
         return '(TOP (S (VP (VB TM)) (NP (NNT MSE) (NP (H H) (NN HLWWIIH))) (yyDOT yyDOT)))'
-    
+
     def write_parse(self, sentences, output_treebank_file='output/predicted.txt'):
         ''' function writing the parse to the output file '''
         with open(output_treebank_file, 'w') as f:
             for sentence in sentences:
                 f.write(self.parse(sentence))
                 f.write('\n')
-                

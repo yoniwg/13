@@ -1,7 +1,7 @@
 import random
 from collections import defaultdict
 
-from transformations import is_terminal
+from transformation.transformations import is_terminal
 from util.tree.node import Node
 
 used_rules = defaultdict(int)
