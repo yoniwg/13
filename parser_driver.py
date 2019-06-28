@@ -18,9 +18,9 @@ def drive(parser_class_under_test, output_treebank_file='output/predicted.txt'):
     # parse
     before = time.time()
     parser.write_parse(
-        [['I', 'am', 'the', 'first', 'sentence', 'to', 'parse'],
-         ['I', 'am', 'another', 'sentence', 'to', 'parse'],
-         ['I', 'am', 'the', 'last', 'sentence', 'to', 'parse']],
+        [
+            ['ALI', 'ATM', 'H', 'XWMR', 'F', 'NFLX', 'AL', 'ANI', 'yyDOT']
+],
         output_treebank_file)
     print(f'parsing took {time.time() - before:.1f} seconds')
     

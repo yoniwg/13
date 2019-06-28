@@ -53,8 +53,9 @@ class Submission(Spec):
         print("Training finished")
 
     def parse(self, sentence):
-        ''' mock parsing function, returns a constant parse unrelated to the input sentence '''
-        return '(TOP (S (VP (VB TM)) (NP (NNT MSE) (NP (H H) (NN HLWWIIH))) (yyDOT yyDOT)))'
+        ''' Abstract '''
+
+    # '(TOP (S (VP (VB TM)) (NP (NNT MSE) (NP (H H) (NN HLWWIIH))) (yyDOT yyDOT)))'
 
     def write_parse(self, sentences, output_treebank_file='output/predicted.txt'):
         ''' function writing the parse to the output file '''
