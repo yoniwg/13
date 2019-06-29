@@ -57,7 +57,9 @@ class cnf_transformer:
         assert_sum_to_one(clean_dict)
         return clean_dict
 
-    def _percolate(self, rule_l, rule_r, prob, rules_chain=set()):
+    def _percolate(self, rule_l, rule_r, prob, rules_chain=None):
+        if rules_chain is None:
+            rules_chain = set()
         if rule_l == rule_r:
             return
         rules_chain.add(rule_r)
@@ -66,7 +68,7 @@ class cnf_transformer:
             if prod_prob == 0 or prod_prod in rules_chain:
                 continue
             if self._is_unary(prod_prod):
-                self._percolate(rule_l, prod_prod, prod_prob * prob)
+                self._percolate(rule_l, prod_prod, prod_prob * prob, rules_chain)
             else:
                 self.cnf_rules_dict[rule_l][prod_prod] += prod_prob * prob
 

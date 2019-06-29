@@ -2,6 +2,9 @@ from solution import Submission
 from transformation.derivations import to_non_t, get_terminal_or_non_t
 from collections import defaultdict
 
+from util.tree.builders import sequence_from_tree
+from util.tree.node import Node
+
 
 class Solution1(Submission):
 
@@ -26,32 +29,62 @@ class Solution1_1(Solution1):
     def __init__(self):
         super().__init__(True)
 
-    def addNodeToTree(self, chart, chartI, chartJ, tree):
+    def createTree(self, chart, chartI, chartJ):
+        root_node = Node('TOP')
         cell = chart[chartI][chartJ]
-        tree += "("
         maxProb = -1
         selectedRule = ""
         for rule, prob in cell.prob_dict.items():
-            if(prob>maxProb):
+            if (prob > maxProb):
                 maxProb = prob
                 selectedRule = rule
 
-        tree +=  selectedRule
+        start_node = Node(selectedRule)
+        root_node.add_child(start_node)
+
         path = cell.path_dic[selectedRule]
         left, right = path
         leftRule, leftI, leftJ = left
-        if(leftJ==0):
-            tree +=  leftRule
-            tree +=  ")"
-            return tree
+        if (leftJ == 0):
+            start_node.add_child(Node(leftRule))
+            return root_node
 
-        tree +=  self.addNodeToTree(chart, leftI, leftJ, tree)
-
+        leftChild = Node(leftRule)
+        start_node.add_child(leftChild)
         rightRule, rightI, rightJ = right
-        tree +=  self.addNodeToTree(chart, rightI, rightJ, tree)
+        rightChild = Node(rightRule)
+        start_node.add_child(rightChild)
 
-        tree +=  ")"
-        return tree
+        self.addNodeToTree(chart, leftI, leftJ, leftChild)
+        self.addNodeToTree(chart, rightI, rightJ, rightChild)
+
+        return root_node
+
+    def addNodeToTree(self, chart, chartI, chartJ, node):
+        cell = chart[chartI][chartJ]
+        maxProb = -1
+        selectedRule = ""
+        for rule, prob in cell.prob_dict.items():
+            if (prob > maxProb):
+                maxProb = prob
+                selectedRule = rule
+
+        path = cell.path_dic[selectedRule]
+        left, right = path
+        leftRule, leftI, leftJ = left
+        if (leftJ == 0):
+            node.add_child(Node(leftRule))
+            return
+
+        leftChild = Node(leftRule)
+        node.add_child(leftChild)
+        rightRule, rightI, rightJ = right
+        rightChild = Node(rightRule)
+        node.add_child(rightChild)
+
+        self.addNodeToTree(chart, leftI, leftJ, leftChild)
+        self.addNodeToTree(chart, rightI, rightJ, rightChild)
+
 
     def parse(self, sentence):
         lengh = len(sentence)
@@ -59,7 +92,6 @@ class Solution1_1(Solution1):
 
         #init
         for x in range(lengh):
-            print(sentence[x])
             terminal_deriver = self._reversed_dict.get(sentence[x])
             if terminal_deriver is  None:
                 return ""
@@ -90,12 +122,9 @@ class Solution1_1(Solution1):
                                         node.path_dic[source_rule]=((firstRule, k, j), (secondRule, i-k, j+k))
 
         #create tree
-        topNode = chart[lengh][1]
-        tree = ""
-        res = self.addNodeToTree(chart, lengh, 1, tree)
+        root_node = self.createTree(chart, lengh, 1)
 
-
-        b = 5
+        return sequence_from_tree(root_node)
 
 
 
