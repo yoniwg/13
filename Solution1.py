@@ -63,8 +63,7 @@ class Solution1_1(Solution1):
             terminal_deriver = self._reversed_dict.get(sentence[x])
             if terminal_deriver is  None:
                 return ""
-            for rule, val in terminal_deriver.items():
-                prob = val[1]
+            for rule, prob in terminal_deriver.items():
                 node = chart[1][x+1]
                 node.prob_dict[rule]=prob
                 node.path_dic[rule]=((sentence[x], x+1, 0), ("", 0, 0))
@@ -83,8 +82,7 @@ class Solution1_1(Solution1):
                             rule_deriver = self._reversed_dict.get(rules)
                             if rule_deriver is not None:
                                 leavesProb = firstProb * secondProb
-                                for source_rule, val in rule_deriver.items():
-                                    prob = val[1]
+                                for source_rule, prob in rule_deriver.items():
                                     curentProb =  node.prob_dict[source_rule]
                                     newProb = prob * leavesProb
                                     if(newProb>curentProb):
@@ -94,7 +92,7 @@ class Solution1_1(Solution1):
         #create tree
         topNode = chart[lengh][1]
         tree = ""
-        res = self.addNodeToTree(chart, lengh, 1, tee)
+        res = self.addNodeToTree(chart, lengh, 1, tree)
 
 
         b = 5

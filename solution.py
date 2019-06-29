@@ -15,11 +15,9 @@ from util.tree.builders import node_tree_from_sequence
 
 def reverse_dict(rules_dict):
     reversed_dict = defaultdict(lambda: defaultdict(float))
-    for rule in rules_dict.items():
-        non_t, prods = rule
-        for prod_prob in prods.items():
-            prod, prob = prod_prob
-            reversed_dict[prod][non_t] = prod_prob
+    for (non_t, prods) in rules_dict.items():
+        for (prod, prob) in prods.items():
+            reversed_dict[prod][non_t] = prob
     return reversed_dict
 
 
@@ -32,7 +30,7 @@ class Submission(Spec):
         self._reversed_dict = dict()
         self._transformer = cnf_transformer(omit_unaries)
 
-    def _count_occurrences(self, node, occurrences_dict):
+    def _count_occurrences(self, root, occurrences_dict):
         """ Abstract """
 
     def train(self, training_treebank_file='data/heb-ctrees.train'):
