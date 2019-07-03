@@ -95,13 +95,13 @@ class cnf_transformer:
     def detransform(self, root_node):
         if not root_node.children:
             return
-        for child_idx in range(len(root_node.children)):
-            child = root_node.children[child_idx]
-            if child.count('*'):
-                self._debinarize(root_node, child_idx)
+        while '*' in root_node.children[-1].tag:
+            self._debinarize(root_node)
+        for child in root_node.children:
+            self.detransform(child)
 
     @staticmethod
-    def _debinarize(parent, child_idx):
-        node = parent.children.pop(child_idx)
-        for gr_child in reversed(node.children):  # reversed since we push it in child_idx
-            parent.children.insert(child_idx, gr_child)
+    def _debinarize(parent):
+        node = parent.children.pop(-1)
+        for gr_child in node.children:  # reversed since we push it in child_idx
+            parent.children.append(gr_child)

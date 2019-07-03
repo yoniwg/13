@@ -10,6 +10,7 @@ from collections import defaultdict
 
 from spec import Spec
 from transformation.cnf_transformer import cnf_transformer
+from transformation.derivations import UNKNOWN_NON_T
 from util.tree.builders import node_tree_from_sequence
 
 
@@ -47,6 +48,7 @@ class Submission(Spec):
                 prod, prod_count = prod_occur
                 self.raw_rules_dict[non_t][prod] = prod_count / non_t_count
         self._transformed_dic = self._transformer.transform(self.raw_rules_dict)
+        self._add_unknowns()
         self._reversed_dict = reverse_dict(self._transformed_dic)
         print("Training finished")
 
@@ -61,3 +63,21 @@ class Submission(Spec):
             for sentence in sentences:
                 f.write(self.parse(sentence))
                 f.write('\n')
+                f.flush()
+
+    def _add_unknowns(self):
+        for rule, prods in self._transformed_dic.items():
+            l_probs = defaultdict(lambda : [0, 0.0])
+            r_probs = defaultdict(lambda : [0, 0.0])
+            for prod, prob in prods.items():
+                if ' ' in prod:
+                    l_non_t, r_non_t = prod.split(' ')
+                    l_probs[l_non_t][0] += 1
+                    l_probs[l_non_t][1] += prob
+                    r_probs[r_non_t][0] += 1
+                    r_probs[r_non_t][1] += prob
+            for l_prob in l_probs:
+                prods[' '.join([l_prob, UNKNOWN_NON_T])] = l_probs[l_prob][1] / l_probs[l_prob][0]
+            for r_prob in r_probs:
+                prods[' '.join([UNKNOWN_NON_T, r_prob])] = r_probs[r_prob][1] / r_probs[r_prob][0]
+

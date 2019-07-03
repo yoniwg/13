@@ -1,8 +1,11 @@
+import itertools
+import operator
+
 from solution import Submission
-from transformation.derivations import to_non_t, get_terminal_or_non_t
+from transformation.derivations import to_non_t, get_terminal_or_non_t, remove_non_t_pref, UNKNOWN_NON_T
 from collections import defaultdict
 
-from util.tree.builders import sequence_from_tree
+from util.tree.builders import sequence_from_tree, node_tree_from_sequence
 from util.tree.node import Node
 
 
@@ -30,7 +33,7 @@ class Solution1_1(Solution1):
         super().__init__(True)
 
     def createTree(self, chart, chartI, chartJ):
-        root_node = Node('TOP')
+        root_node = Node(to_non_t('TOP'))
         cell = chart[chartI][chartJ]
         maxProb = -1
         selectedRule = ""
@@ -93,12 +96,14 @@ class Solution1_1(Solution1):
         #init
         for x in range(lengh):
             terminal_deriver = self._reversed_dict.get(sentence[x])
-            if terminal_deriver is  None:
-                return ""
-            for rule, prob in terminal_deriver.items():
-                node = chart[1][x+1]
-                node.prob_dict[rule]=prob
-                node.path_dic[rule]=((sentence[x], x+1, 0), ("", 0, 0))
+            node = chart[1][x + 1]
+            if terminal_deriver is None:
+                node.prob_dict[UNKNOWN_NON_T] = 1
+                node.path_dic[UNKNOWN_NON_T] = ((sentence[x], x + 1, 0), ("", 0, 0))
+            else:
+                for rule, prob in terminal_deriver.items():
+                    node.prob_dict[rule]=prob
+                    node.path_dic[rule]=((sentence[x], x+1, 0), ("", 0, 0))
 
         #main loop
         for i in range(2, lengh+1):
@@ -115,15 +120,18 @@ class Solution1_1(Solution1):
                             if rule_deriver is not None:
                                 leavesProb = firstProb * secondProb
                                 for source_rule, prob in rule_deriver.items():
-                                    curentProb =  node.prob_dict[source_rule]
+                                    curentProb = node.prob_dict[source_rule]
                                     newProb = prob * leavesProb
                                     if(newProb>curentProb):
                                         node.prob_dict[source_rule] = newProb
                                         node.path_dic[source_rule]=((firstRule, k, j), (secondRule, i-k, j+k))
-
+                node.prob_dict = dict(sorted(node.prob_dict.items(), key=operator.itemgetter(1), reverse=True)[:200])
         #create tree
         root_node = self.createTree(chart, lengh, 1)
 
+
+        self._transformer.detransform(root_node)
+        remove_non_t_pref(root_node)
         return sequence_from_tree(root_node)
 
 
