@@ -47,13 +47,14 @@ class Solution3(Solution1_1):
                 nodes_table[j-1][j][sentence[j]] = Node(sentence[j])
             for i in reversed(range(j)):
                 for k in range(i, j):
-                    for pair in set(product(table[i][k], table[k+1][j])).intersection(self._reversed_dict.keys()):
-                        for (l_rule, prob) in self._reversed_dict[pair].items():
-                            new_prob = prob * table[i][k][pair[0]] * table[k+1][j][pair[1]]
-                            if table[i][j][l_rule] < new_prob:
-                                table[i][j][l_rule] = new_prob
-                                node = Node(l_rule.tag)
-                                node.add_child(nodes_table[i][k][pair[0] if isinstance(pair[0],str) else pair[0].tag])
-                                node.add_child(nodes_table[i][k][pair[1] if isinstance(pair[1],str) else pair[1].tag])
-                                nodes_table[i][j][l_rule.tag] = node
+                    for pair in self._reversed_dict.keys():
+                        if pair[0] in table[i][k] and pair[1] in table[k+1][j]:
+                            for (l_rule, prob) in self._reversed_dict[pair].items():
+                                new_prob = prob * table[i][k][pair[0]] * table[k+1][j][pair[1]]
+                                if table[i][j][l_rule] < new_prob:
+                                    table[i][j][l_rule] = new_prob
+                                    node = Node(l_rule.tag)
+                                    node.add_child(nodes_table[i][k][pair[0] if isinstance(pair[0],str) else pair[0].tag])
+                                    node.add_child(nodes_table[i][k][pair[1] if isinstance(pair[1],str) else pair[1].tag])
+                                    nodes_table[i][j][l_rule.tag] = node
         return nodes_table[0][len(sentence)-1]['TOP']
