@@ -17,8 +17,8 @@ from util.transliteration import to_heb
 from util.tree.builders import node_tree_from_sequence
 from util.tree.node import Node
 from pprint import pprint
+bracketed_notation_tree = '(TOP (FRAG (CC W) (S (S (PP (IN EL) (NP (PRP KK))) (VP (VB TEID)) (NP (H H) (NN HISJWRIH))) (yyCM yyCM) (CC W) (S (VP (VB IEIDW)) (NP (NP (CDT EFRWT) (NP (H H) (NN LWXMIM))) (SBAR (REL F) (S (S (VP (VB NFARW)) (PP (IN B) (NP (H H) (NN XIIM)))) (CC W) (S (VP (VB HCLIXW)) (VP (VB LBCE) (NP (AT AT) (NP (NN MFIMTM)))) (PP (INP (IN EL) (IN AP)) (NP (NP (H H) (NN ABDWT)) (ADJP (H H) (JJ KBDWT)))))))))) (yyDOT yyDOT)))'
 
-bracketed_notation_tree = '(TOP (S (ADVP (RB RCUB)) (VP (VB MWXZR)) (PP (IN ALI) (NP (PRP ATM))) (NP (NP (H H) (NN XWMR)) (SBAR (REL F) (S (VP (VB NFLX)) (PP (IN AL) (NP (PRP ANI)))))) (yyDOT yyDOT)))'
 #bracketed_notation_tree = '(TOP (S (ADVP (RB RCUB))))'
 #bracketed_notation_tree = '(1 (2 2-leaf) (3 3-leaf-1 3-leaf2 3-leaf-3))'
 

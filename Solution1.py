@@ -1,6 +1,12 @@
+import itertools
+import operator
+
 from solution import Submission
-from transformation.derivations import to_non_t, get_terminal_or_non_t
+from transformation.derivations import to_non_t, get_terminal_or_non_t, remove_non_t_pref, UNKNOWN_T
 from collections import defaultdict
+
+from util.tree.builders import sequence_from_tree, node_tree_from_sequence
+from util.tree.node import Node
 
 
 class Solution1(Submission):
@@ -26,32 +32,75 @@ class Solution1_1(Solution1):
     def __init__(self):
         super().__init__(True)
 
-    def addNodeToTree(self, chart, chartI, chartJ, tree):
+    def createTree(self, chart, chartI, chartJ):
+        root_node = Node(to_non_t('TOP'))
         cell = chart[chartI][chartJ]
-        tree += "("
+        maxProb = -1
+        selectedRule = ''
+        for rule, prob in cell.prob_dict.items():
+            if (prob > maxProb):
+                maxProb = prob
+                selectedRule = rule
+        start_node = Node(selectedRule)
+        root_node.add_child(start_node)
+        if not selectedRule:
+            return root_node
+
+        path = cell.path_dic[selectedRule]
+        u_path, left, right = path
+
+        for non_t in u_path:
+            u_node = Node(non_t)
+            start_node.add_child(u_node)
+            start_node = u_node
+
+        leftRule, leftI, leftJ = left
+        if (leftJ == 0):
+            start_node.add_child(Node(leftRule))
+            return root_node
+
+        leftChild = Node(leftRule)
+        start_node.add_child(leftChild)
+        rightRule, rightI, rightJ = right
+        rightChild = Node(rightRule)
+        start_node.add_child(rightChild)
+
+        self.addNodeToTree(chart, leftI, leftJ, leftChild)
+        self.addNodeToTree(chart, rightI, rightJ, rightChild)
+
+        return root_node
+
+    def addNodeToTree(self, chart, chartI, chartJ, node):
+        cell = chart[chartI][chartJ]
         maxProb = -1
         selectedRule = ""
         for rule, prob in cell.prob_dict.items():
-            if(prob>maxProb):
+            if (prob > maxProb):
                 maxProb = prob
                 selectedRule = rule
 
-        tree +=  selectedRule
         path = cell.path_dic[selectedRule]
-        left, right = path
+        u_path, left, right = path
+
+        for non_t in u_path:
+            u_node = Node(non_t)
+            node.add_child(u_node)
+            node = u_node
+
         leftRule, leftI, leftJ = left
-        if(leftJ==0):
-            tree +=  leftRule
-            tree +=  ")"
-            return tree
+        if (leftJ == 0):
+            node.add_child(Node(leftRule))
+            return
 
-        tree +=  self.addNodeToTree(chart, leftI, leftJ, tree)
-
+        leftChild = Node(leftRule)
+        node.add_child(leftChild)
         rightRule, rightI, rightJ = right
-        tree +=  self.addNodeToTree(chart, rightI, rightJ, tree)
+        rightChild = Node(rightRule)
+        node.add_child(rightChild)
 
-        tree +=  ")"
-        return tree
+        self.addNodeToTree(chart, leftI, leftJ, leftChild)
+        self.addNodeToTree(chart, rightI, rightJ, rightChild)
+
 
     def parse(self, sentence):
         lengh = len(sentence)
@@ -59,14 +108,15 @@ class Solution1_1(Solution1):
 
         #init
         for x in range(lengh):
-            print(sentence[x])
             terminal_deriver = self._reversed_dict.get(sentence[x])
-            if terminal_deriver is  None:
-                return ""
-            for rule, prob in terminal_deriver.items():
-                node = chart[1][x+1]
-                node.prob_dict[rule]=prob
-                node.path_dic[rule]=((sentence[x], x+1, 0), ("", 0, 0))
+            node = chart[1][x + 1]
+            if terminal_deriver is None:
+                node.prob_dict[UNKNOWN_T] = 0.0001
+                node.path_dic[UNKNOWN_T] = ((sentence[x], x + 1, 0), ("", 0, 0))
+            else:
+                for rule, prob in terminal_deriver.items():
+                    node.prob_dict[rule]=prob
+                    node.path_dic[rule]=((sentence[x], x+1, 0), ("", 0, 0))
 
         #main loop
         for i in range(2, lengh+1):
@@ -79,23 +129,37 @@ class Solution1_1(Solution1):
                     for firstRule, firstProb in firstNodeToCheck.prob_dict.items():
                         for secondRule, secondProb in secondNodeToCheck.prob_dict.items():
                             rules = firstRule + " " + secondRule
-                            rule_deriver = self._reversed_dict.get(rules)
-                            if rule_deriver is not None:
+                            rules_deriver = self._reversed_dict.get(rules)
+                            if rules_deriver is not None:
                                 leavesProb = firstProb * secondProb
-                                for source_rule, prob in rule_deriver.items():
-                                    curentProb =  node.prob_dict[source_rule]
-                                    newProb = prob * leavesProb
-                                    if(newProb>curentProb):
-                                        node.prob_dict[source_rule] = newProb
-                                        node.path_dic[source_rule]=((firstRule, k, j), (secondRule, i-k, j+k))
+                                for source_rule, prob in rules_deriver.items():
+                                    for unary_first, (u_path, u_prob) in self.find_unaries(source_rule, prob).items():
+                                        curentProb = node.prob_dict[unary_first]
+                                        newProb = u_prob * leavesProb
+                                        if newProb > curentProb:
+                                            node.prob_dict[source_rule] = newProb
+                                            node.path_dic[source_rule]=(u_path, (firstRule, k, j), (secondRule, i-k, j+k))
 
+                node.prob_dict = dict(sorted(node.prob_dict.items(), key=operator.itemgetter(1), reverse=True)[:100])
         #create tree
-        topNode = chart[lengh][1]
-        tree = ""
-        res = self.addNodeToTree(chart, lengh, 1, tree)
+        root_node = self.createTree(chart, lengh, 1)
 
 
-        b = 5
+        self._transformer.detransform(root_node)
+        remove_non_t_pref(root_node)
+        return sequence_from_tree(root_node)
+
+    def find_unaries(self, source_rule, source_prob, path_tup=tuple()):
+        unaries = dict()
+        for rule, prob in self._reversed_dict[source_rule].items():
+            if prob > source_prob:
+                path_tup += (rule,)
+                unaries[source_rule] = (path_tup, prob)
+        for rule, (path, prob) in list(unaries.items()):
+            unaries += self.find_unaries(rule, path, prob).items()
+        return unaries
+
+
 
 
 

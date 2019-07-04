@@ -1,6 +1,18 @@
 import os.path as path
 from os import remove
-import time 
+import time
+
+from util.tree.get_yield import get_yield
+from util.tree.builders import list_tree_from_sequence
+
+
+def get_sentences():
+    # return [['W', 'EL', 'KK', 'TEID', 'H', 'HISJWRIH', 'yyCM', 'W', 'IEIDW', 'EFRWT', 'H', 'LWXMIM', 'F', 'NFARW', 'B', 'H', 'XIIM', 'W', 'HCLIXW', 'LBCE', 'AT', 'MFIMTM', 'EL', 'AP', 'H', 'ABDWT', 'H', 'KBDWT', 'yyDOT']]
+    with open('data/heb-ctrees.gold') as fd:
+        lines = fd.readlines()
+        for line in lines:
+            yield get_yield(list_tree_from_sequence(line))
+
 
 def drive(parser_class_under_test, output_treebank_file='output/predicted.txt'):
     ''' a simplified version of the solution driver to be used for testing all submissions '''
@@ -18,9 +30,7 @@ def drive(parser_class_under_test, output_treebank_file='output/predicted.txt'):
     # parse
     before = time.time()
     parser.write_parse(
-        [
-            ['ALI', 'ATM', 'H', 'XWMR', 'F', 'NFLX', 'AL', 'ANI', 'yyDOT']
-],
+        get_sentences(),
         output_treebank_file)
     print(f'parsing took {time.time() - before:.1f} seconds')
     
