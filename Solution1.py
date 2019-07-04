@@ -47,7 +47,13 @@ class Solution1_1(Solution1):
             return root_node
 
         path = cell.path_dic[selectedRule]
-        left, right = path
+        u_path, left, right = path
+
+        for non_t in u_path:
+            u_node = Node(non_t)
+            start_node.add_child(u_node)
+            start_node = u_node
+
         leftRule, leftI, leftJ = left
         if (leftJ == 0):
             start_node.add_child(Node(leftRule))
@@ -74,7 +80,13 @@ class Solution1_1(Solution1):
                 selectedRule = rule
 
         path = cell.path_dic[selectedRule]
-        left, right = path
+        u_path, left, right = path
+
+        for non_t in u_path:
+            u_node = Node(non_t)
+            node.add_child(u_node)
+            node = u_node
+
         leftRule, leftI, leftJ = left
         if (leftJ == 0):
             node.add_child(Node(leftRule))
@@ -121,11 +133,12 @@ class Solution1_1(Solution1):
                             if rules_deriver is not None:
                                 leavesProb = firstProb * secondProb
                                 for source_rule, prob in rules_deriver.items():
-                                    curentProb = node.prob_dict[source_rule]
-                                    newProb = prob * leavesProb
-                                    if newProb > curentProb:
-                                        node.prob_dict[source_rule] = newProb
-                                        node.path_dic[source_rule]=((firstRule, k, j), (secondRule, i-k, j+k))
+                                    for unary_first, (u_path, u_prob) in self.find_unaries(source_rule, prob).items():
+                                        curentProb = node.prob_dict[unary_first]
+                                        newProb = u_prob * leavesProb
+                                        if newProb > curentProb:
+                                            node.prob_dict[source_rule] = newProb
+                                            node.path_dic[source_rule]=(u_path, (firstRule, k, j), (secondRule, i-k, j+k))
 
                 node.prob_dict = dict(sorted(node.prob_dict.items(), key=operator.itemgetter(1), reverse=True)[:100])
         #create tree
@@ -135,6 +148,18 @@ class Solution1_1(Solution1):
         self._transformer.detransform(root_node)
         remove_non_t_pref(root_node)
         return sequence_from_tree(root_node)
+
+    def find_unaries(self, source_rule, source_prob, path_tup=tuple()):
+        unaries = dict()
+        for rule, prob in self._reversed_dict[source_rule].items():
+            if prob > source_prob:
+                path_tup += (rule,)
+                unaries[source_rule] = (path_tup, prob)
+        for rule, (path, prob) in list(unaries.items()):
+            unaries += self.find_unaries(rule, path, prob).items()
+        return unaries
+
+
 
 
 
