@@ -7,6 +7,7 @@ from util.tree.builders import list_tree_from_sequence
 
 
 def get_sentences():
+    # return [['W', 'EL', 'KK', 'TEID', 'H', 'HISJWRIH', 'yyCM', 'W', 'IEIDW', 'EFRWT', 'H', 'LWXMIM', 'F', 'NFARW', 'B', 'H', 'XIIM', 'W', 'HCLIXW', 'LBCE', 'AT', 'MFIMTM', 'EL', 'AP', 'H', 'ABDWT', 'H', 'KBDWT', 'yyDOT']]
     with open('data/heb-ctrees.gold') as fd:
         lines = fd.readlines()
         for line in lines:

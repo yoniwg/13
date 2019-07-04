@@ -2,7 +2,7 @@ import itertools
 import operator
 
 from solution import Submission
-from transformation.derivations import to_non_t, get_terminal_or_non_t, remove_non_t_pref, UNKNOWN_NON_T
+from transformation.derivations import to_non_t, get_terminal_or_non_t, remove_non_t_pref, UNKNOWN_T
 from collections import defaultdict
 
 from util.tree.builders import sequence_from_tree, node_tree_from_sequence
@@ -36,14 +36,15 @@ class Solution1_1(Solution1):
         root_node = Node(to_non_t('TOP'))
         cell = chart[chartI][chartJ]
         maxProb = -1
-        selectedRule = ""
+        selectedRule = ''
         for rule, prob in cell.prob_dict.items():
             if (prob > maxProb):
                 maxProb = prob
                 selectedRule = rule
-
         start_node = Node(selectedRule)
         root_node.add_child(start_node)
+        if not selectedRule:
+            return root_node
 
         path = cell.path_dic[selectedRule]
         left, right = path
@@ -98,8 +99,8 @@ class Solution1_1(Solution1):
             terminal_deriver = self._reversed_dict.get(sentence[x])
             node = chart[1][x + 1]
             if terminal_deriver is None:
-                node.prob_dict[UNKNOWN_NON_T] = 1
-                node.path_dic[UNKNOWN_NON_T] = ((sentence[x], x + 1, 0), ("", 0, 0))
+                node.prob_dict[UNKNOWN_T] = 0.0001
+                node.path_dic[UNKNOWN_T] = ((sentence[x], x + 1, 0), ("", 0, 0))
             else:
                 for rule, prob in terminal_deriver.items():
                     node.prob_dict[rule]=prob
@@ -116,16 +117,17 @@ class Solution1_1(Solution1):
                     for firstRule, firstProb in firstNodeToCheck.prob_dict.items():
                         for secondRule, secondProb in secondNodeToCheck.prob_dict.items():
                             rules = firstRule + " " + secondRule
-                            rule_deriver = self._reversed_dict.get(rules)
-                            if rule_deriver is not None:
+                            rules_deriver = self._reversed_dict.get(rules)
+                            if rules_deriver is not None:
                                 leavesProb = firstProb * secondProb
-                                for source_rule, prob in rule_deriver.items():
+                                for source_rule, prob in rules_deriver.items():
                                     curentProb = node.prob_dict[source_rule]
                                     newProb = prob * leavesProb
-                                    if(newProb>curentProb):
+                                    if newProb > curentProb:
                                         node.prob_dict[source_rule] = newProb
                                         node.path_dic[source_rule]=((firstRule, k, j), (secondRule, i-k, j+k))
-                node.prob_dict = dict(sorted(node.prob_dict.items(), key=operator.itemgetter(1), reverse=True)[:200])
+
+                node.prob_dict = dict(sorted(node.prob_dict.items(), key=operator.itemgetter(1), reverse=True)[:100])
         #create tree
         root_node = self.createTree(chart, lengh, 1)
 

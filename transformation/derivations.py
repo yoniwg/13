@@ -25,4 +25,5 @@ def remove_non_t_pref(node):
             remove_non_t_pref(child)
 
 
-UNKNOWN_NON_T = to_non_t('UNKNOWN')
+UNKNOWN_T = to_non_t('UNKNOWN_T')
+UNKNOWN_NON_T = to_non_t('UNKNOWN_NON_T')
