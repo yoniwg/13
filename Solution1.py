@@ -2,12 +2,12 @@ import itertools
 import operator
 
 from solution import Submission
-from transformation.derivations import to_non_t, get_terminal_or_non_t, remove_non_t_pref, UNKNOWN_T
+from transformation.derivations import to_non_t, get_terminal_or_non_t, remove_non_t_pref, UNKNOWN_T, is_unary, \
+    is_terminal
 from collections import defaultdict
 
 from util.tree.builders import sequence_from_tree, node_tree_from_sequence
 from util.tree.node import Node
-
 
 class Solution1(Submission):
 
@@ -21,33 +21,22 @@ class Solution1(Submission):
         for child in node.children:
             self._count_occurrences(child, occurrences_dict)
 
-
-class DerivationInfo:
-    def __init__(self):
-        self.prob_dict = defaultdict(float)
-        self.path_dic = dict()
-
-class Solution1_1(Solution1):
-
-    def __init__(self):
-        super().__init__(True)
-
     def createTree(self, chart, chartI, chartJ):
         root_node = Node(to_non_t('TOP'))
         cell = chart[chartI][chartJ]
         maxProb = -1
-        selectedRule = ''
-        for rule, prob in cell.prob_dict.items():
-            if (prob > maxProb):
-                maxProb = prob
-                selectedRule = rule
-        start_node = Node(selectedRule)
+        start_node = Node("")
+        selected_info = None
+        for rule, info in cell.items():
+            if info[0] and info[0] > maxProb:
+                maxProb = info[0]
+                start_node.tag = rule
+                selected_info = info
         root_node.add_child(start_node)
-        if not selectedRule:
+        if not selected_info:
             return root_node
 
-        path = cell.path_dic[selectedRule]
-        u_path, left, right = path
+        _, u_path, left, right = selected_info
 
         for non_t in u_path:
             u_node = Node(non_t)
@@ -73,14 +62,15 @@ class Solution1_1(Solution1):
     def addNodeToTree(self, chart, chartI, chartJ, node):
         cell = chart[chartI][chartJ]
         maxProb = -1
-        selectedRule = ""
-        for rule, prob in cell.prob_dict.items():
-            if (prob > maxProb):
-                maxProb = prob
-                selectedRule = rule
+        selected_info = None
+        for rule, info in cell.items():
+            if info[0] and info[0] > maxProb:
+                maxProb = info[0]
+                selected_info = info
+        if not selected_info:
+            return node
 
-        path = cell.path_dic[selectedRule]
-        u_path, left, right = path
+        _, u_path, left, right = selected_info
 
         for non_t in u_path:
             u_node = Node(non_t)
@@ -104,19 +94,17 @@ class Solution1_1(Solution1):
 
     def parse(self, sentence):
         lengh = len(sentence)
-        chart = [[DerivationInfo() for j in range(lengh+1)] for i in range(lengh+1)]
+        chart = [[dict() for j in range(lengh+1)] for i in range(lengh+1)]
 
         #init
         for x in range(lengh):
             terminal_deriver = self._reversed_dict.get(sentence[x])
             node = chart[1][x + 1]
             if terminal_deriver is None:
-                node.prob_dict[UNKNOWN_T] = 0.0001
-                node.path_dic[UNKNOWN_T] = ((sentence[x], x + 1, 0), ("", 0, 0))
+                self.fill_node(node, UNKNOWN_T, 0.0001, 1, (sentence[x], x + 1, 0), ("", 0, 0))
             else:
                 for rule, prob in terminal_deriver.items():
-                    node.prob_dict[rule]=prob
-                    node.path_dic[rule]=((sentence[x], x+1, 0), ("", 0, 0))
+                    self.fill_node(node, rule, prob,1,(sentence[x], x+1, 0), ("", 0, 0))
 
         #main loop
         for i in range(2, lengh+1):
@@ -126,21 +114,17 @@ class Solution1_1(Solution1):
                     firstNodeToCheck = chart[k][j]
                     secondNodeToCheck = chart[i-k][j+k]
 
-                    for firstRule, firstProb in firstNodeToCheck.prob_dict.items():
-                        for secondRule, secondProb in secondNodeToCheck.prob_dict.items():
+                    for firstRule, (firstProb,_,_,_) in firstNodeToCheck.items():
+                        for secondRule, (secondProb,_,_,_) in secondNodeToCheck.items():
                             rules = firstRule + " " + secondRule
                             rules_deriver = self._reversed_dict.get(rules)
                             if rules_deriver is not None:
                                 leavesProb = firstProb * secondProb
                                 for source_rule, prob in rules_deriver.items():
-                                    for unary_first, (u_path, u_prob) in self.find_unaries(source_rule, prob).items():
-                                        curentProb = node.prob_dict[unary_first]
-                                        newProb = u_prob * leavesProb
-                                        if newProb > curentProb:
-                                            node.prob_dict[source_rule] = newProb
-                                            node.path_dic[source_rule]=(u_path, (firstRule, k, j), (secondRule, i-k, j+k))
+                                    self.fill_node(node, source_rule, prob, leavesProb,(firstRule, k, j), (secondRule, i-k, j+k))
 
-                node.prob_dict = dict(sorted(node.prob_dict.items(), key=operator.itemgetter(1), reverse=True)[:100])
+
+                chart[i][j] = dict(sorted(node.items(), key=operator.itemgetter(1,0), reverse=True)[:100])
         #create tree
         root_node = self.createTree(chart, lengh, 1)
 
@@ -149,21 +133,55 @@ class Solution1_1(Solution1):
         remove_non_t_pref(root_node)
         return sequence_from_tree(root_node)
 
-    def find_unaries(self, source_rule, source_prob, path_tup=tuple()):
-        unaries = dict()
-        for rule, prob in self._reversed_dict[source_rule].items():
-            if prob > source_prob:
-                path_tup += (rule,)
-                unaries[source_rule] = (path_tup, prob)
-        for rule, (path, prob) in list(unaries.items()):
-            unaries += self.find_unaries(rule, path, prob).items()
-        return unaries
+    def fill_node(self, node, source_rule, prob, leavesProb, l_child, r_child):
+        '''abstract'''
 
 
 
 
+class Solution1_1(Solution1):
+
+    def __init__(self):
+        super().__init__(True)
+
+    def fill_node(self, node, source_rule, prob, leavesProb, l_child, r_child):
+        newProb = prob * leavesProb
+        if source_rule not in node or newProb > node[source_rule][0]:
+            node[source_rule] = (newProb, tuple(), l_child, r_child)
 
 class Solution1_2(Solution1):
 
     def __init__(self):
         super().__init__(False)
+        self._unaries_dict = dict()
+
+    def train(self, training_treebank_file='data/heb-ctrees.train'):
+        super().train(training_treebank_file)
+        print("Calculating unary rules paths")
+        self.init_unaries_dict()
+
+    def __find_unaries(self, source_rule, unaries):
+        path_tup, source_prob = unaries[source_rule]
+        new_rules = set()
+        if source_rule not in self._reversed_dict:
+            return unaries
+        for rule, prob in self._reversed_dict[source_rule].items():
+            merged_prob = prob * source_prob
+            if not rule in unaries or merged_prob > unaries[rule][1]:
+                unaries[rule] = (path_tup + (source_rule,), merged_prob)
+                new_rules.add(rule)
+        for rule in new_rules:
+            self.__find_unaries(rule, unaries)
+        return unaries
+
+    def init_unaries_dict(self):
+        for rule in list(self._transformed_dic.keys()) + [UNKNOWN_T]:
+            if not is_terminal(rule) and is_unary(rule):
+                unaries = self.__find_unaries(rule, {rule: (tuple(), 1)})
+                self._unaries_dict[rule] = unaries
+
+    def fill_node(self, node, source_rule, prob, leavesProb, l_child, r_child):
+        for unary_top, (u_path, u_prob) in self._unaries_dict[source_rule].items():
+            newProb = prob * leavesProb * u_prob
+            if unary_top not in node or newProb > node[unary_top][0]:
+                node[unary_top] = (newProb, u_path, l_child, r_child)

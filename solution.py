@@ -51,12 +51,11 @@ class Submission(Spec):
                 prod, prod_count = prod_occur
                 self.raw_rules_dict[non_t][prod] = prod_count / non_t_count
         print("Transforming to CNF")
-        self._transformed_dic = self._transformer.transform(self.raw_rules_dict)
+        self._transformed_dic = dict(self._transformer.transform(self.raw_rules_dict))
         print("Handling unknown rules")
         self._add_unknowns()
         print("Adding reversed rules")
         self._reversed_dict = reverse_dict(self._transformed_dic)
-        print("Training finished")
 
     def parse(self, sentence):
         ''' Abstract '''
@@ -93,10 +92,14 @@ class Submission(Spec):
                     r_probs[r_non_t][0] += 1
                     r_probs[r_non_t][1] += prob * prob_l_derives_t
                     r_probs[r_non_t][2] += prob * (1 - prob_l_derives_t)
-            for l_prob in l_probs:
-                prods[' '.join([l_prob, UNKNOWN_T])] = l_probs[l_prob][1] / l_probs[l_prob][0]
-                prods[' '.join([l_prob, UNKNOWN_NON_T])] = l_probs[l_prob][2] / l_probs[l_prob][0]
-            for r_prob in r_probs:
-                prods[' '.join([UNKNOWN_T, r_prob])] = r_probs[r_prob][1] / r_probs[r_prob][0]
-                prods[' '.join([UNKNOWN_NON_T, r_prob])] = r_probs[r_prob][2] / r_probs[r_prob][0]
+            for l_prob, findings in l_probs.items():
+                if findings[1]:
+                    prods[' '.join([l_prob, UNKNOWN_T])] = findings[1] / findings[0]
+                if findings[2]:
+                    prods[' '.join([l_prob, UNKNOWN_NON_T])] = findings[2] / findings[0]
+            for r_prob, findings in r_probs.items():
+                if findings[1]:
+                    prods[' '.join([UNKNOWN_T, r_prob])] = findings[1] / findings[0]
+                if findings[2]:
+                    prods[' '.join([UNKNOWN_NON_T, r_prob])] = findings[2] / findings[0]
 

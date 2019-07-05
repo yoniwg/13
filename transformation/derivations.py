@@ -25,5 +25,9 @@ def remove_non_t_pref(node):
             remove_non_t_pref(child)
 
 
+def is_unary(non_t):
+    return ' ' not in non_t
+
+
 UNKNOWN_T = to_non_t('UNKNOWN_T')
 UNKNOWN_NON_T = to_non_t('UNKNOWN_NON_T')
