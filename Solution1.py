@@ -165,11 +165,9 @@ class Solution1_2(Solution1):
         new_rules = set()
         if source_rule not in self._reversed_dict:
             return unaries
-        num_prev_path = len(path_tup)
         for rule, prob in self._reversed_dict[source_rule].items():
-            merged_prob = (prob + source_prob * num_prev_path) / (num_prev_path + 1)
-            if rule not in path_tup and (rule not in unaries or merged_prob > unaries[rule][1]):
-                unaries[rule] = (path_tup + (source_rule,), merged_prob)
+            if rule not in path_tup and (rule not in unaries or prob > unaries[rule][1]):
+                unaries[rule] = (path_tup + (source_rule,), prob)
                 new_rules.add(rule)
         for rule in new_rules:
             self.__find_unaries(rule, unaries)
@@ -178,11 +176,11 @@ class Solution1_2(Solution1):
     def init_unaries_dict(self):
         for rule in list(self._transformed_dic.keys()) + [UNKNOWN_T]:
             if not is_terminal(rule) and is_unary(rule):
-                unaries = self.__find_unaries(rule, {rule: (tuple(), 1)})
+                unaries = self.__find_unaries(rule, {rule: (tuple(), 0)})
                 self._unaries_dict[rule] = unaries
 
     def fill_node(self, node, source_rule, prob, leavesProb, l_child, r_child):
         for unary_top, (u_path, u_prob) in self._unaries_dict[source_rule].items():
-            newProb = leavesProb * (prob + u_prob * len(u_path)) / (len(u_path) + 1)
+            newProb = leavesProb * (u_prob if u_prob else prob)
             if unary_top not in node or newProb > node[unary_top][0]:
                 node[unary_top] = (newProb, u_path, l_child, r_child)
