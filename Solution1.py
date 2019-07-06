@@ -124,7 +124,7 @@ class Solution1(Submission):
                                     self.fill_node(node, source_rule, prob, leavesProb,(firstRule, k, j), (secondRule, i-k, j+k))
 
 
-                chart[i][j] = dict(sorted(node.items(), key=operator.itemgetter(1,0), reverse=True)[:100])
+                chart[i][j] = dict(sorted(node.items(), key=operator.itemgetter(1,0), reverse=True)[:300])
         #create tree
         root_node = self.createTree(chart, lengh, 1)
 
@@ -165,9 +165,10 @@ class Solution1_2(Solution1):
         new_rules = set()
         if source_rule not in self._reversed_dict:
             return unaries
+        num_prev_path = len(path_tup)
         for rule, prob in self._reversed_dict[source_rule].items():
-            merged_prob = prob * source_prob
-            if not rule in unaries or merged_prob > unaries[rule][1]:
+            merged_prob = (prob + source_prob * num_prev_path) / (num_prev_path + 1)
+            if rule not in path_tup and (rule not in unaries or merged_prob > unaries[rule][1]):
                 unaries[rule] = (path_tup + (source_rule,), merged_prob)
                 new_rules.add(rule)
         for rule in new_rules:
@@ -182,6 +183,6 @@ class Solution1_2(Solution1):
 
     def fill_node(self, node, source_rule, prob, leavesProb, l_child, r_child):
         for unary_top, (u_path, u_prob) in self._unaries_dict[source_rule].items():
-            newProb = prob * leavesProb * u_prob
+            newProb = leavesProb * (prob + u_prob * len(u_path)) / (len(u_path) + 1)
             if unary_top not in node or newProb > node[unary_top][0]:
                 node[unary_top] = (newProb, u_path, l_child, r_child)
