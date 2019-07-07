@@ -8,17 +8,19 @@ See the spec that this class inherits, for the spec details
 '''
 from collections import defaultdict
 
+from math import log
+
 from spec import Spec
 from transformation.cnf_transformer import cnf_transformer
 from transformation.derivations import UNKNOWN_T, is_terminal, UNKNOWN_NON_T
 from util.tree.builders import node_tree_from_sequence
 
 
-def reverse_dict(rules_dict):
+def reverse_dict_and_ln_prob(rules_dict):
     reversed_dict = defaultdict(lambda: defaultdict(float))
     for (non_t, prods) in rules_dict.items():
         for (prod, prob) in prods.items():
-            reversed_dict[prod][non_t] = prob
+            reversed_dict[prod][non_t] = log(prob)
     return reversed_dict
 
 
@@ -55,7 +57,7 @@ class Submission(Spec):
         print("Handling unknown rules")
         self._add_unknowns()
         print("Adding reversed rules")
-        self._reversed_dict = reverse_dict(self._transformed_dic)
+        self._reversed_dict = reverse_dict_and_ln_prob(self._transformed_dic)
 
     def parse(self, sentence):
         ''' Abstract '''
@@ -74,7 +76,7 @@ class Submission(Spec):
         print("Finished parsing {} sentences".format(i+1))
 
     def get_only_terminal_prob(self, non_t):
-        return sum(map(lambda prod: prod[1] if is_terminal(prod[0]) else 0, self._transformed_dic[non_t].items()))
+        return min(1.0, sum(map(lambda prod: prod[1] if is_terminal(prod[0]) else 0, self._transformed_dic[non_t].items())))
 
     def _add_unknowns(self):
         terminal_derivation_probs = dict([(non_t, self.get_only_terminal_prob(non_t)) for non_t in self._transformed_dic])

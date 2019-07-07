@@ -1,12 +1,13 @@
-import itertools
 import operator
+import sys
+
+from math import log
 
 from solution import Submission
 from transformation.derivations import to_non_t, get_terminal_or_non_t, remove_non_t_pref, UNKNOWN_T, is_unary, \
     is_terminal
-from collections import defaultdict
 
-from util.tree.builders import sequence_from_tree, node_tree_from_sequence
+from util.tree.builders import sequence_from_tree
 from util.tree.node import Node
 
 class Solution1(Submission):
@@ -24,11 +25,11 @@ class Solution1(Submission):
     def createTree(self, chart, chartI, chartJ):
         root_node = Node(to_non_t('TOP'))
         cell = chart[chartI][chartJ]
-        maxProb = -1
+        maxProb = float("-inf")
         start_node = Node("")
         selected_info = None
         for rule, info in cell.items():
-            if info[0] and info[0] > maxProb:
+            if info[0] > maxProb:
                 maxProb = info[0]
                 start_node.tag = rule
                 selected_info = info
@@ -44,7 +45,7 @@ class Solution1(Submission):
             start_node = u_node
 
         leftRule, leftI, leftJ = left
-        if (leftJ == 0):
+        if leftJ == 0:
             start_node.add_child(Node(leftRule))
             return root_node
 
@@ -61,10 +62,10 @@ class Solution1(Submission):
 
     def addNodeToTree(self, chart, chartI, chartJ, node):
         cell = chart[chartI][chartJ]
-        maxProb = -1
+        maxProb = float("-inf")
         selected_info = None
         for rule, info in cell.items():
-            if info[0] and info[0] > maxProb:
+            if info[0] > maxProb:
                 maxProb = info[0]
                 selected_info = info
         if not selected_info:
@@ -101,10 +102,10 @@ class Solution1(Submission):
             terminal_deriver = self._reversed_dict.get(sentence[x])
             node = chart[1][x + 1]
             if terminal_deriver is None:
-                self.fill_node(node, UNKNOWN_T, 0.0001, 1, (sentence[x], x + 1, 0), ("", 0, 0))
+                self.fill_node(node, UNKNOWN_T, log(0.0001), 0, (sentence[x], x + 1, 0), ("", 0, 0))
             else:
                 for rule, prob in terminal_deriver.items():
-                    self.fill_node(node, rule, prob,1,(sentence[x], x+1, 0), ("", 0, 0))
+                    self.fill_node(node, rule, prob,0,(sentence[x], x+1, 0), ("", 0, 0))
 
         #main loop
         for i in range(2, lengh+1):
@@ -119,7 +120,7 @@ class Solution1(Submission):
                             rules = firstRule + " " + secondRule
                             rules_deriver = self._reversed_dict.get(rules)
                             if rules_deriver is not None:
-                                leavesProb = firstProb * secondProb
+                                leavesProb = firstProb + secondProb
                                 for source_rule, prob in rules_deriver.items():
                                     self.fill_node(node, source_rule, prob, leavesProb,(firstRule, k, j), (secondRule, i-k, j+k))
 
@@ -145,7 +146,7 @@ class Solution1_1(Solution1):
         super().__init__(True)
 
     def fill_node(self, node, source_rule, prob, leavesProb, l_child, r_child):
-        newProb = prob * leavesProb
+        newProb = prob + leavesProb
         if source_rule not in node or newProb > node[source_rule][0]:
             node[source_rule] = (newProb, tuple(), l_child, r_child)
 
@@ -166,8 +167,9 @@ class Solution1_2(Solution1):
         if source_rule not in self._reversed_dict:
             return unaries
         for rule, prob in self._reversed_dict[source_rule].items():
-            if rule not in path_tup and (rule not in unaries or prob > unaries[rule][1]):
-                unaries[rule] = (path_tup + (source_rule,), prob)
+            new_prob = source_prob + prob
+            if rule not in path_tup and (rule not in unaries or new_prob > unaries[rule][1]):
+                unaries[rule] = (path_tup + (source_rule,), new_prob)
                 new_rules.add(rule)
         for rule in new_rules:
             self.__find_unaries(rule, unaries)
@@ -181,6 +183,6 @@ class Solution1_2(Solution1):
 
     def fill_node(self, node, source_rule, prob, leavesProb, l_child, r_child):
         for unary_top, (u_path, u_prob) in self._unaries_dict[source_rule].items():
-            newProb = leavesProb * (u_prob if u_prob else prob)
+            newProb = leavesProb + u_prob + prob
             if unary_top not in node or newProb > node[unary_top][0]:
                 node[unary_top] = (newProb, u_path, l_child, r_child)
