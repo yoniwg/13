@@ -2,9 +2,11 @@ from util.tree.util import flatten
 
 class Node():
     
-    def __init__(self, tag):
+    def __init__(self, tag, idx, parent = None):
         self.tag = tag
         self.children = []
+        self.idx = idx
+        self.parent = parent
         #print(f'node created with tag {tag}')
     
     def add_child(self, child):

@@ -10,14 +10,14 @@ def node_tree_from_sequence(sequence):
     return unpack_list_tree(list_tree)
     
 
-def unpack_list_tree(list_node):
+def unpack_list_tree(list_node, idx = 0, parent = None):
     if isinstance(list_node, List):
-        node = Node(list_node.head)
-        for child in list_node.children:
-            node.add_child(unpack_list_tree(child))
+        node = Node(list_node.head, idx, parent)
+        for i, child in enumerate(list_node.children):
+            node.add_child(unpack_list_tree(child, i, node))
 
     else:
-        node = Node(list_node)
+        node = Node(list_node, idx, parent)
         
     return node
 
