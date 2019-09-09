@@ -1,198 +1,181 @@
-import operator
-import sys
 
-from math import log
-
-from solution import Submission
-from transformation.derivations import to_non_t, get_terminal_or_non_t, remove_non_t_pref, UNKNOWN_T, is_unary, \
-    is_terminal
-
-from util.tree.builders import sequence_from_tree
-from util.tree.node import Node
-
-class ProjectSolution:
-    pass
-
-class TerminalsHanler(ProjectSolution):
-    def __init__(self, rulesList, delimitersList, NumFromBegin, NumFromEnd):
+class TerminalsHandler:
+    def __init__(self, rules_list, delimiters_list, num_from_begin, num_from_end):
         self.rulesDict = {}
 
-        for x in range(NumFromBegin):
-            self.rulesDict[str(x+1) + "_FromBegin"] = 0;
+        for x in range(num_from_begin):
+            self.rulesDict[str(x + 1) + "_FromBegin"] = 0
 
-        for x in range(NumFromEnd):
-            self.rulesDict[str(x+1) + "_FromEnd"] = 0;
+        for x in range(num_from_end):
+            self.rulesDict[str(x + 1) + "_FromEnd"] = 0
 
-        for i, val in enumerate(rulesList):
-            self.rulesDict["Uncle_" + val] = 0;
+        for i, val in enumerate(rules_list):
+            self.rulesDict["Uncle_" + val] = 0
 
-        for i, val in enumerate(rulesList):
-            self.rulesDict["Uncle2_" + val] = 0;
+        for i, val in enumerate(rules_list):
+            self.rulesDict["Uncle2_" + val] = 0
 
-        self.mNumFromBegin = NumFromBegin;
-        self.mNumFromEnd = NumFromEnd;
-        self.mDelimitersList = delimitersList;
+        self.mNumFromBegin = num_from_begin
+        self.mNumFromEnd = num_from_end
+        self.mDelimitersList = delimiters_list
 
-    def createFeaturesList(self, uncle, uncle2, PlaceFromBegin, PlaceFromEnd):
-        dic = self.rulesDict.copy();
+    def create_features_list(self, uncle, uncle2, place_from_begin, place_from_end):
+        dic = self.rulesDict.copy()
 
-        if (uncle != None):
-            dic["Uncle_" + uncle] = 1;
+        if uncle is not None:
+            dic["Uncle_" + uncle] = 1
 
-        if (uncle2 != None):
-            dic["Uncle2_" + uncle2] = 1;
+        if uncle2 is not None:
+            dic["Uncle2_" + uncle2] = 1
 
-        if(PlaceFromBegin<=self.mNumFromBegin):
-            dic[str(PlaceFromBegin) + "_FromBegin"] = 1;
+        if place_from_begin <= self.mNumFromBegin:
+            dic[str(place_from_begin) + "_FromBegin"] = 1
 
-        if (PlaceFromEnd <= self.mNumFromEnd):
-            dic[str(PlaceFromEnd) + "_FromEnd"] = 1;
+        if place_from_end <= self.mNumFromEnd:
+            dic[str(place_from_end) + "_FromEnd"] = 1
 
-        return dic.values();
+        return dic.values()
 
-
-    def createFeaturesListForNode(self, terminalsList, nodeIndex):
+    def create_features_list_for_node(self, terminals_list, node_index):
         uncle = None
         uncle2 = None
-        if(nodeIndex>0):
-            rule, terminnal = terminalsList[nodeIndex-1];
-            uncle = rule;
+        if node_index > 0:
+            rule, terminal = terminals_list[node_index - 1]
+            uncle = rule
 
-        if (nodeIndex > 1):
-            rule, terminnal = terminalsList[nodeIndex - 2];
-            uncle2 = rule;
+        if node_index > 1:
+            rule, terminal = terminals_list[node_index - 2]
+            uncle2 = rule
 
-        preDelimeter, PostDelimeter = self.findDelimitersPlaceAroundInex(nodeIndex, terminalsList);
+        pre_delimiter, post_delimiter = self.find_delimiters_place_around_inex(node_index, terminals_list)
 
-        return self.createFeaturesList(uncle, uncle2, nodeIndex-preDelimeter, PostDelimeter-nodeIndex);
+        return self.create_features_list(uncle, uncle2, node_index - pre_delimiter, post_delimiter - node_index)
 
-    def createTerminalsListForTree(self, root):
+    def create_terminals_list_for_tree(self, root):
 
-        if (root.tag != "TOP"):
-            print("ERROR: This isn't root");
-            return None;
+        if root.tag != "TOP":
+            print("ERROR: This isn't root")
+            return None
 
-        node = root.children[0];
-        terminalsList = list();
-        self.getTerminals(node, terminalsList);
+        node = root.children[0]
+        terminals_list = list()
+        self.get_terminals(node, terminals_list)
 
-        return terminalsList;
+        return terminals_list
 
-    def getTerminals(self, node, TerminalsList):
-        if (len(node.children) == 0):
-            TerminalsList.append((node.parent.tag,node.tag))
-            return;
-        self.getTerminals(node.children[0], TerminalsList);
+    def get_terminals(self, node, terminals_list):
+        if len(node.children) == 0:
+            terminals_list.append((node.parent.tag, node.tag))
+            return
+        self.get_terminals(node.children[0], terminals_list)
 
-        if (len(node.children) == 2):
-            self.getTerminals(node.children[1], TerminalsList);
+        if len(node.children) == 2:
+            self.get_terminals(node.children[1], terminals_list)
 
+    def find_delimiters_place_around_inex(self, index, terminals_list):
+        before_index = -1
+        after_index = len(terminals_list)
 
-    def findDelimitersPlaceAroundInex(self, index, TerminalsList):
-        beforeIndex = -1
-        afterIndex = len(TerminalsList);
+        for idx, val in enumerate(terminals_list):
+            rule, terminal = val
+            if (idx < index) and self.is_delimiter(terminal):
+                before_index = idx
+            if (idx > index) and self.is_delimiter(terminal):
+                after_index = idx
+                return before_index, after_index
 
-        for idx, val in enumerate(TerminalsList):
-            rule, terminal = val;
-            if((idx<index) and  self.isDelimiter(terminal)):
-                beforeIndex = idx;
-            if ((idx > index) and self.isDelimiter(terminal)):
-                afterIndex = idx;
-                return (beforeIndex, afterIndex);
+        return before_index, after_index
 
-        return (beforeIndex, afterIndex);
-
-
-    def isDelimiter(self, terminal):
+    def is_delimiter(self, terminal):
         for word in self.mDelimitersList:
-            if(terminal == word):
-                return True;
+            if terminal == word:
+                return True
 
-        return False;
+        return False
 
 
-
-class RulesHanler(ProjectSolution):
-    def __init__(self, rulesList, maxDeepFromEnd):
+class RulesHandler:
+    def __init__(self, rules_list, max_deep_from_end):
         self.rulesDict = {}
 
-        for x in range(maxDeepFromEnd):
-            self.rulesDict[str(x+1) + "_FromLeftEnd"] = 0;
+        for x in range(max_deep_from_end):
+            self.rulesDict[str(x + 1) + "_FromLeftEnd"] = 0
 
-        for x in range(maxDeepFromEnd):
-            self.rulesDict[str(x+1) + "_FromRightEnd"] = 0;
+        for x in range(max_deep_from_end):
+            self.rulesDict[str(x + 1) + "_FromRightEnd"] = 0
 
-        for i, val in enumerate(rulesList):
-            self.rulesDict["Left_" + val] = 0;
+        for i, val in enumerate(rules_list):
+            self.rulesDict["Left_" + val] = 0
 
-        for i, val in enumerate(rulesList):
-            self.rulesDict["Right_" + val] = 0;
+        for i, val in enumerate(rules_list):
+            self.rulesDict["Right_" + val] = 0
 
-        for i, val in enumerate(rulesList):
-            self.rulesDict["Left_Left_" + val] = 0;
+        for i, val in enumerate(rules_list):
+            self.rulesDict["Left_Left_" + val] = 0
 
-        for i, val in enumerate(rulesList):
-            self.rulesDict["Left_Right_" + val] = 0;
+        for i, val in enumerate(rules_list):
+            self.rulesDict["Left_Right_" + val] = 0
 
-        for i, val in enumerate(rulesList):
-            self.rulesDict["Right_Left_" + val] = 0;
+        for i, val in enumerate(rules_list):
+            self.rulesDict["Right_Left_" + val] = 0
 
-        for i, val in enumerate(rulesList):
-            self.rulesDict["Right_Right_" + val] = 0;
+        for i, val in enumerate(rules_list):
+            self.rulesDict["Right_Right_" + val] = 0
 
-        self.mMaxDeepFromEnd = maxDeepFromEnd;
+        self.mMaxDeepFromEnd = max_deep_from_end
 
-    def createFeaturesList(self, leftRule, rightRule, leftLeftRule, leftRightRule, rightLeftRule, rightRightRule, leftDeepFromEnd, rightDeepFromEnd):
-        dic = self.rulesDict.copy();
+    def create_features_list(self, left_rule, right_rule, left_left_rule, left_right_rule, right_left_rule,
+                             right_right_rule, left_deep_from_end, right_deep_from_end):
+        dic = self.rulesDict.copy()
 
-        if (leftRule != None):
-            dic["Left_" + leftRule] = 1;
+        if left_rule is not None:
+            dic["Left_" + left_rule] = 1
 
-        if (rightRule != None):
-            dic["Right_" + rightRule] = 1;
+        if right_rule is not None:
+            dic["Right_" + right_rule] = 1
 
-        if (leftLeftRule != None):
-            dic["Left_Left_" + leftLeftRule] = 1;
+        if left_left_rule is not None:
+            dic["Left_Left_" + left_left_rule] = 1
 
-        if (leftRightRule != None):
-            dic["Left_Right_" + leftRightRule] = 1;
+        if left_right_rule is not None:
+            dic["Left_Right_" + left_right_rule] = 1
 
-        if (rightLeftRule != None):
-            dic["Right_Left_" + rightLeftRule] = 1;
+        if right_left_rule is not None:
+            dic["Right_Left_" + right_left_rule] = 1
 
-        if (rightRightRule != None):
-            dic["Right_Right_" + rightRightRule] = 1;
+        if right_right_rule is not None:
+            dic["Right_Right_" + right_right_rule] = 1
 
-        if(leftDeepFromEnd<=self.mMaxDeepFromEnd):
-            dic[str(leftDeepFromEnd) + "_FromLeftEnd"] = 1;
+        if left_deep_from_end <= self.mMaxDeepFromEnd:
+            dic[str(left_deep_from_end) + "_FromLeftEnd"] = 1
 
-        if (rightDeepFromEnd <= self.mMaxDeepFromEnd):
-            dic[str(rightDeepFromEnd) + "_FromRightEnd"] = 1;
+        if right_deep_from_end <= self.mMaxDeepFromEnd:
+            dic[str(right_deep_from_end) + "_FromRightEnd"] = 1
 
-        return dic.values();
+        return dic.values()
 
-    def createFeaturesListForNodes(self, leftNode, rightNode):
-        leftRule = leftNode.tag;
-        rightRule = rightNode.tag;
+    def create_features_list_for_nodes(self, left_node, right_node):
+        left_rule = left_node.tag
+        right_rule = right_node.tag
 
-        leftLeftRule = None;
-        leftRightRule = None;
-        if (len(leftNode.children) == 2):
-            leftLeftRule = leftNode.children[0].tag;
-            leftRightRule = leftNode.children[1].tag;
+        left_left_rule = None
+        left_right_rule = None
+        if len(left_node.children) == 2:
+            left_left_rule = left_node.children[0].tag
+            left_right_rule = left_node.children[1].tag
 
-        rightLeftRule = None;
-        rightRightRule = None;
-        if (len(rightNode.children) == 2):
-            rightLeftRule = rightNode.children[0].tag;
-            rightRightRule = rightNode.children[1].tag;
+        right_left_rule = None
+        right_right_rule = None
+        if len(right_node.children) == 2:
+            right_left_rule = right_node.children[0].tag
+            right_right_rule = right_node.children[1].tag
 
-        leftDeepFromEnd = self.getDeep(leftNode);
-        rightDeepFromEnd = self.getDeep(rightNode);
+        left_deep_from_end = self.get_deep(left_node)
+        right_deep_from_end = self.get_deep(right_node)
 
-        return self.createFeaturesList(leftRule, rightRule, leftLeftRule, leftRightRule, rightLeftRule, rightRightRule, leftDeepFromEnd, rightDeepFromEnd);
+        return self.create_features_list(left_rule, right_rule, left_left_rule, left_right_rule, right_left_rule,
+                                         right_right_rule, left_deep_from_end, right_deep_from_end)
 
-    def getDeep(self, Node):
-        return 3;
-        #TODO YONI
-
+    def get_deep(self, node):
+        return 3
+        # TODO YONI
